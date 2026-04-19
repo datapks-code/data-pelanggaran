@@ -19,7 +19,6 @@ body {
   padding: 20px;
   border-radius: 15px;
   box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-  animation: fadeIn 0.6s ease;
 }
 
 .header {
@@ -39,6 +38,7 @@ body {
 .logo img {
   width: 45px;
   height: 45px;
+  object-fit: contain;
 }
 
 h1 {
@@ -107,8 +107,9 @@ th, td {
 
 <div class="header">
   <div class="logo">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Logo_Kementerian_Agama.svg/512px-Logo_Kementerian_Agama.svg.png">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/3/3a/Logo_OSIS.svg">
+    <!-- LOGO FIX (INI HARUS MUNCUL) -->
+    <img src="logo mtsn.png">
+    <img src="logo osis.png">
   </div>
 
   <h1>Pelanggaran Siswa MTSN Kota Madiun</h1>
@@ -155,7 +156,7 @@ const API = "https://script.google.com/macros/s/AKfycbwmyF0PMT1i6TyZ5HjmjJ_M85_G
 
 let semuaData = [];
 
-// KIRIM DATA
+// TAMBAH DATA
 function tambahData() {
   let nama = document.getElementById("nama").value;
   let kelas = document.getElementById("kelas").value;
@@ -187,7 +188,7 @@ function ambilData() {
     });
 }
 
-// 🔥 FIX UTAMA (GABUNG + SORT)
+// 🔥 GABUNG + SORT
 function tampilkanData(dataTampil = semuaData) {
   let tabel = document.getElementById("tabel");
   tabel.innerHTML = "";
@@ -210,6 +211,7 @@ function tampilkanData(dataTampil = semuaData) {
     dataGabung[key].total++;
   });
 
+  // SORT TERBANYAK KE ATAS
   let hasil = Object.values(dataGabung).sort((a, b) => b.total - a.total);
 
   let totalSemua = 0;
@@ -233,7 +235,7 @@ function tampilkanData(dataTampil = semuaData) {
     "Total Pelanggaran: " + totalSemua;
 }
 
-// 🔥 FIX SEARCH
+// 🔍 SEARCH FIX
 function filterData() {
   let keyword = document.getElementById("search").value.toLowerCase();
 
