@@ -55,6 +55,11 @@ function ambilData() {
     .then(data => {
       semuaData = data.slice(1);
       tampilkanData();
+    })
+    .catch(err => {
+      console.error("API error:", err);
+      document.getElementById("tabel").innerHTML =
+        "<tr><td colspan='4'>❌ Gagal ambil data</td></tr>";
     });
 }
 
