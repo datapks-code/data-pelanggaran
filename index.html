@@ -176,7 +176,7 @@ function tambahData() {
   let sekarang = Date.now();
   let dataSekarang = nama + "|" + kelas + "|" + pelanggaran;
 
-  if (dataSekarang === lastData && (sekarang - lastTime) < 5000) {
+  if (dataSekarang === lastData && (sekarang - lastTime) < 10000) {
     alert("Jangan klik 2x! Data sama terdeteksi.");
     return;
   }
