@@ -152,7 +152,7 @@ th, td {
 </div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbwmyF0PMT1i6TyZ5HjmjJ_M85_GVwGGBLLBhkPcVw0LVTyRHmo920C0xx-Hpd1Kg8GE/exec";
+const API = "https://script.google.com/macros/s/AKfycbxIDolVcldDWRDbxmgqBjiEyNP2Fh_0ZCnaxZ_a_UWz17aVMhcOK46Nkz2xX3Tf79pS/exec";
 
 let semuaData = [];
 
@@ -172,12 +172,11 @@ function tambahData() {
     return;
   }
 
-  // 🔥 CEK DOUBLE 2 DETIK
   let sekarang = Date.now();
   let dataSekarang = nama + "|" + kelas + "|" + pelanggaran;
 
-  if (dataSekarang === lastData && (sekarang - lastTime) < 10000) {
-    alert("Jangan klik 2x! Data sama terdeteksi.");
+  if (dataSekarang === lastData && (sekarang - lastTime) < 2000) {
+    alert("Jangan klik 2x!");
     return;
   }
 
@@ -209,14 +208,29 @@ function ambilData() {
     });
 }
 
-// 🔥 GABUNG + NORMALIZE + SORT
+// 🔥 FILTER HARI INI
+function hanyaHariIni(data) {
+  let hariIni = new Date().toISOString().split("T")[0];
+
+  return data.filter(d => {
+    let waktu = d[3]; // pastikan kolom ke-4 di sheet = timestamp
+    if (!waktu) return false;
+
+    let tanggal = new Date(waktu).toISOString().split("T")[0];
+    return tanggal === hariIni;
+  });
+}
+
+// 🔥 TAMPILKAN DATA
 function tampilkanData(dataTampil = semuaData) {
   let tabel = document.getElementById("tabel");
   tabel.innerHTML = "";
 
+  let dataHariIni = hanyaHariIni(dataTampil);
+
   let dataGabung = {};
 
-  dataTampil.forEach(d => {
+  dataHariIni.forEach(d => {
     let nama = d[0].toLowerCase().trim();
     let kelas = d[1].toUpperCase().trim();
     let pelanggaran = d[2].toLowerCase().trim();
@@ -236,14 +250,9 @@ function tampilkanData(dataTampil = semuaData) {
     dataGabung[key].total++;
   });
 
-  // 🔥 SORT TERBANYAK DI ATAS
   let hasil = Object.values(dataGabung).sort((a, b) => b.total - a.total);
 
-  let totalSemua = 0;
-
   hasil.forEach(d => {
-    totalSemua += d.total;
-
     let merah = d.total >= 3 ? "danger" : "";
 
     tabel.innerHTML += `
@@ -256,16 +265,18 @@ function tampilkanData(dataTampil = semuaData) {
     `;
   });
 
+  // 🔥 TOTAL SEMUA (bukan cuma hari ini)
   document.getElementById("total").innerText =
-    "Total Pelanggaran: " + totalSemua;
+    "Total Semua Pelanggaran: " + semuaData.length +
+    " | Hari Ini: " + dataHariIni.length;
 }
 
-// 🔥 BIAR NAMA JADI RAPI (Miki bukan miki)
+// FORMAT NAMA
 function capitalize(text) {
   return text.replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// 🔍 SEARCH
+// SEARCH
 function filterData() {
   let keyword = document.getElementById("search").value.toLowerCase();
 
@@ -276,7 +287,7 @@ function filterData() {
   tampilkanData(hasil);
 }
 
-// AUTO REFRESH
+// AUTO REFRESH (LEBIH RINGAN)
 ambilData();
-setInterval(ambilData, 1500);
+setInterval(ambilData, 5000);
 </script>
