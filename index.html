@@ -169,7 +169,7 @@ function tambahData() {
     return;
   }
 
-  // 🔥 CEK DUPLIKAT HARI INI (ANTI 1x PER HARI)
+  // 🔥 CEK DUPLIKAT HARI INI
   let hariIni = new Date().toISOString().split("T")[0];
 
   let sudahAda = semuaData.some(d => {
@@ -225,16 +225,16 @@ function hanyaHariIni(data) {
   });
 }
 
-// TAMPILKAN DATA
-function tampilkanData(dataTampil = semuaData) {
+// 🔥 TAMPILKAN DATA (FIX MODE)
+function tampilkanData(dataTampil = semuaData, modeSemua = false) {
   let tabel = document.getElementById("tabel");
   tabel.innerHTML = "";
 
-  let dataHariIni = hanyaHariIni(dataTampil);
+  let dataDipakai = modeSemua ? dataTampil : hanyaHariIni(dataTampil);
 
   let gabung = {};
 
-  dataHariIni.forEach(d => {
+  dataDipakai.forEach(d => {
     let nama = d[0].toLowerCase().trim();
     let kelas = d[1].toUpperCase().trim();
     let pelanggaran = d[2].toLowerCase().trim();
@@ -269,8 +269,11 @@ function tampilkanData(dataTampil = semuaData) {
     `;
   });
 
+  let dataHariIni = hanyaHariIni(semuaData);
+
   document.getElementById("total").innerText =
-    "Hari Ini: " + dataHariIni.length + " | Total Semua: " + semuaData.length;
+    "Hari Ini: " + dataHariIni.length +
+    " | Total Semua: " + semuaData.length;
 }
 
 // FORMAT NAMA
@@ -278,7 +281,7 @@ function capitalize(text) {
   return text.replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// 🔍 SEARCH (NAMA + KELAS FULL FIX)
+// 🔥 SEARCH SUPER FLEX (NAMA + KELAS CAMPUR)
 function filterData() {
   let keyword = document.getElementById("search").value.toLowerCase().trim();
 
@@ -290,20 +293,22 @@ function filterData() {
 
   sedangSearch = true;
 
+  let kata = keyword.split(" "); // pecah kata
+
   let hasil = semuaData.filter(d => {
     let nama = d[0]?.toLowerCase() || "";
     let kelas = d[1]?.toLowerCase() || "";
 
-    return (
-      nama.includes(keyword) ||
-      kelas.includes(keyword)
-    );
+    let gabungan = nama + " " + kelas;
+
+    // 🔥 semua kata harus ada (biar "bintang 9h" work)
+    return kata.every(k => gabungan.includes(k));
   });
 
-  tampilkanData(hasil);
+  tampilkanData(hasil, true); // 🔥 tampilkan semua (bukan hari ini doang)
 }
 
-// AUTO REFRESH (GAK GANGGU SEARCH)
+// AUTO REFRESH AMAN
 ambilData();
 setInterval(() => {
   if (!sedangSearch) ambilData();
