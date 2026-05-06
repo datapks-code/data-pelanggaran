@@ -169,11 +169,13 @@ function tambahData() {
     return;
   }
 
-  // 🔥 CEK DUPLIKAT HARI INI
+  // 🔥 CEK DUPLIKAT HARI INI (ANTI 1x PER HARI)
   let hariIni = new Date().toISOString().split("T")[0];
 
   let sudahAda = semuaData.some(d => {
+    if (!d[3]) return false;
     let tgl = new Date(d[3]).toISOString().split("T")[0];
+
     return (
       d[0].toLowerCase().trim() === nama &&
       d[1].toUpperCase().trim() === kelas &&
@@ -183,7 +185,7 @@ function tambahData() {
   });
 
   if (sudahAda) {
-    alert("Data sama sudah ada hari ini!");
+    alert("Data ini sudah pernah dimasukkan hari ini!");
     return;
   }
 
@@ -276,7 +278,7 @@ function capitalize(text) {
   return text.replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// 🔍 SEARCH (NAMA + KELAS)
+// 🔍 SEARCH (NAMA + KELAS FULL FIX)
 function filterData() {
   let keyword = document.getElementById("search").value.toLowerCase().trim();
 
@@ -288,17 +290,24 @@ function filterData() {
 
   sedangSearch = true;
 
-  let hasil = semuaData.filter(d =>
-    d[0].toLowerCase().includes(keyword) ||
-    d[1].toLowerCase().includes(keyword)
-  );
+  let hasil = semuaData.filter(d => {
+    let nama = d[0]?.toLowerCase() || "";
+    let kelas = d[1]?.toLowerCase() || "";
+
+    return (
+      nama.includes(keyword) ||
+      kelas.includes(keyword)
+    );
+  });
 
   tampilkanData(hasil);
 }
 
-// AUTO REFRESH AMAN
+// AUTO REFRESH (GAK GANGGU SEARCH)
 ambilData();
 setInterval(() => {
   if (!sedangSearch) ambilData();
+}, 5000);
+</script>
 }, 5000);
 </script>
