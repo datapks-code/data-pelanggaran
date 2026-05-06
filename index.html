@@ -155,10 +155,7 @@ th, td {
 const API = "https://script.google.com/macros/s/AKfycbxIDolVcldDWRDbxmgqBjiEyNP2Fh_0ZCnaxZ_a_UWz17aVMhcOK46Nkz2xX3Tf79pS/exec";
 
 let semuaData = [];
-
-// 🔥 ANTI DOUBLE
-let lastData = "";
-let lastTime = 0;
+let sedangSearch = false;
 
 // TAMBAH DATA
 function tambahData() {
@@ -172,16 +169,23 @@ function tambahData() {
     return;
   }
 
-  let sekarang = Date.now();
-  let dataSekarang = nama + "|" + kelas + "|" + pelanggaran;
+  // 🔥 CEK DUPLIKAT HARI INI
+  let hariIni = new Date().toISOString().split("T")[0];
 
-  if (dataSekarang === lastData && (sekarang - lastTime) < 2000) {
-    alert("Jangan klik 2x!");
+  let sudahAda = semuaData.some(d => {
+    let tgl = new Date(d[3]).toISOString().split("T")[0];
+    return (
+      d[0].toLowerCase().trim() === nama &&
+      d[1].toUpperCase().trim() === kelas &&
+      d[2].toLowerCase().trim() === pelanggaran &&
+      tgl === hariIni
+    );
+  });
+
+  if (sudahAda) {
+    alert("Data sama sudah ada hari ini!");
     return;
   }
-
-  lastData = dataSekarang;
-  lastTime = sekarang;
 
   fetch(API, {
     method: "POST",
@@ -203,32 +207,30 @@ function ambilData() {
   fetch(API)
     .then(res => res.json())
     .then(data => {
-      semuaData = data.slice(1);
-      tampilkanData();
+      semuaData = data;
+      if (!sedangSearch) tampilkanData();
     });
 }
 
-// 🔥 FILTER HARI INI
+// FILTER HARI INI
 function hanyaHariIni(data) {
   let hariIni = new Date().toISOString().split("T")[0];
 
   return data.filter(d => {
-    let waktu = d[3]; // pastikan kolom ke-4 di sheet = timestamp
-    if (!waktu) return false;
-
-    let tanggal = new Date(waktu).toISOString().split("T")[0];
-    return tanggal === hariIni;
+    if (!d[3]) return false;
+    let tgl = new Date(d[3]).toISOString().split("T")[0];
+    return tgl === hariIni;
   });
 }
 
-// 🔥 TAMPILKAN DATA
+// TAMPILKAN DATA
 function tampilkanData(dataTampil = semuaData) {
   let tabel = document.getElementById("tabel");
   tabel.innerHTML = "";
 
   let dataHariIni = hanyaHariIni(dataTampil);
 
-  let dataGabung = {};
+  let gabung = {};
 
   dataHariIni.forEach(d => {
     let nama = d[0].toLowerCase().trim();
@@ -237,20 +239,20 @@ function tampilkanData(dataTampil = semuaData) {
 
     let key = nama + "_" + kelas;
 
-    if (!dataGabung[key]) {
-      dataGabung[key] = {
-        nama: nama,
-        kelas: kelas,
+    if (!gabung[key]) {
+      gabung[key] = {
+        nama,
+        kelas,
         pelanggaran: [],
         total: 0
       };
     }
 
-    dataGabung[key].pelanggaran.push(pelanggaran);
-    dataGabung[key].total++;
+    gabung[key].pelanggaran.push(pelanggaran);
+    gabung[key].total++;
   });
 
-  let hasil = Object.values(dataGabung).sort((a, b) => b.total - a.total);
+  let hasil = Object.values(gabung).sort((a, b) => b.total - a.total);
 
   hasil.forEach(d => {
     let merah = d.total >= 3 ? "danger" : "";
@@ -265,10 +267,8 @@ function tampilkanData(dataTampil = semuaData) {
     `;
   });
 
-  // 🔥 TOTAL SEMUA (bukan cuma hari ini)
   document.getElementById("total").innerText =
-    "Total Semua Pelanggaran: " + semuaData.length +
-    " | Hari Ini: " + dataHariIni.length;
+    "Hari Ini: " + dataHariIni.length + " | Total Semua: " + semuaData.length;
 }
 
 // FORMAT NAMA
@@ -276,18 +276,29 @@ function capitalize(text) {
   return text.replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// SEARCH
+// 🔍 SEARCH (NAMA + KELAS)
 function filterData() {
-  let keyword = document.getElementById("search").value.toLowerCase();
+  let keyword = document.getElementById("search").value.toLowerCase().trim();
+
+  if (keyword === "") {
+    sedangSearch = false;
+    tampilkanData();
+    return;
+  }
+
+  sedangSearch = true;
 
   let hasil = semuaData.filter(d =>
-    d[0].toLowerCase().includes(keyword)
+    d[0].toLowerCase().includes(keyword) ||
+    d[1].toLowerCase().includes(keyword)
   );
 
   tampilkanData(hasil);
 }
 
-// AUTO REFRESH (LEBIH RINGAN)
+// AUTO REFRESH AMAN
 ambilData();
-setInterval(ambilData, 5000);
+setInterval(() => {
+  if (!sedangSearch) ambilData();
+}, 5000);
 </script>
