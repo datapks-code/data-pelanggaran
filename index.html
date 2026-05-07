@@ -174,6 +174,7 @@ function tambahData() {
 
   let sudahAda = semuaData.some(d => {
     if (!d[3]) return false;
+
     let tgl = new Date(d[3]).toISOString().split("T")[0];
 
     return (
@@ -188,6 +189,16 @@ function tambahData() {
     alert("Data ini sudah pernah dimasukkan hari ini!");
     return;
   }
+
+  // 🔥 KONFIRMASI INPUT
+  let konfirmasi = confirm(
+    "Yakin ingin memasukkan data ini?\n\n" +
+    "Nama: " + capitalize(nama) + "\n" +
+    "Kelas: " + kelas + "\n" +
+    "Pelanggaran: " + pelanggaran
+  );
+
+  if (!konfirmasi) return;
 
   fetch(API, {
     method: "POST",
@@ -210,7 +221,10 @@ function ambilData() {
     .then(res => res.json())
     .then(data => {
       semuaData = data;
-      if (!sedangSearch) tampilkanData();
+
+      if (!sedangSearch) {
+        tampilkanData();
+      }
     });
 }
 
@@ -220,21 +234,44 @@ function hanyaHariIni(data) {
 
   return data.filter(d => {
     if (!d[3]) return false;
+
     let tgl = new Date(d[3]).toISOString().split("T")[0];
+
     return tgl === hariIni;
   });
 }
 
-// 🔥 TAMPILKAN DATA (FIX MODE)
+// 🔥 TAMPILKAN DATA
 function tampilkanData(dataTampil = semuaData, modeSemua = false) {
+
   let tabel = document.getElementById("tabel");
   tabel.innerHTML = "";
 
+  // 🔥 kalau search tampil semua data
   let dataDipakai = modeSemua ? dataTampil : hanyaHariIni(dataTampil);
 
+  // 🔥 TOTAL AKUMULASI SEMUA HARI
+  let totalSemuaSiswa = {};
+
+  semuaData.forEach(d => {
+
+    let nama = d[0].toLowerCase().trim();
+    let kelas = d[1].toUpperCase().trim();
+
+    let key = nama + "_" + kelas;
+
+    if (!totalSemuaSiswa[key]) {
+      totalSemuaSiswa[key] = 0;
+    }
+
+    totalSemuaSiswa[key]++;
+  });
+
+  // 🔥 GABUNG DATA
   let gabung = {};
 
   dataDipakai.forEach(d => {
+
     let nama = d[0].toLowerCase().trim();
     let kelas = d[1].toUpperCase().trim();
     let pelanggaran = d[2].toLowerCase().trim();
@@ -242,21 +279,22 @@ function tampilkanData(dataTampil = semuaData, modeSemua = false) {
     let key = nama + "_" + kelas;
 
     if (!gabung[key]) {
+
       gabung[key] = {
         nama,
         kelas,
         pelanggaran: [],
-        total: 0
+        total: totalSemuaSiswa[key] || 0
       };
     }
 
     gabung[key].pelanggaran.push(pelanggaran);
-    gabung[key].total++;
   });
 
   let hasil = Object.values(gabung).sort((a, b) => b.total - a.total);
 
   hasil.forEach(d => {
+
     let merah = d.total >= 3 ? "danger" : "";
 
     tabel.innerHTML += `
@@ -281,36 +319,53 @@ function capitalize(text) {
   return text.replace(/\b\w/g, c => c.toUpperCase());
 }
 
-// 🔥 SEARCH SUPER FLEX (NAMA + KELAS CAMPUR)
+// 🔍 SEARCH SUPER FLEX
 function filterData() {
-  let keyword = document.getElementById("search").value.toLowerCase().trim();
 
+  let keyword = document.getElementById("search")
+    .value
+    .toLowerCase()
+    .trim();
+
+  // kalau kosong balik normal
   if (keyword === "") {
+
     sedangSearch = false;
     tampilkanData();
+
     return;
   }
 
   sedangSearch = true;
 
-  let kata = keyword.split(" "); // pecah kata
+  // pecah kata
+  let kata = keyword.split(" ");
 
   let hasil = semuaData.filter(d => {
+
     let nama = d[0]?.toLowerCase() || "";
     let kelas = d[1]?.toLowerCase() || "";
 
     let gabungan = nama + " " + kelas;
 
-    // 🔥 semua kata harus ada (biar "bintang 9h" work)
-    return kata.every(k => gabungan.includes(k));
+    // semua kata harus cocok
+    return kata.every(k =>
+      gabungan.includes(k)
+    );
   });
 
-  tampilkanData(hasil, true); // 🔥 tampilkan semua (bukan hari ini doang)
+  // 🔥 tampilkan semua hasil search
+  tampilkanData(hasil, true);
 }
 
-// AUTO REFRESH AMAN
+// AUTO REFRESH
 ambilData();
+
 setInterval(() => {
-  if (!sedangSearch) ambilData();
+
+  if (!sedangSearch) {
+    ambilData();
+  }
+
 }, 5000);
 </script>
