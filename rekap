@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Rekap Bulanan PKS</title>
+
+<style>
+body{
+  font-family: Arial;
+  background:#f2f2f2;
+  padding:20px;
+}
+
+.container{
+  max-width:1200px;
+  margin:auto;
+  background:white;
+  padding:20px;
+  border-radius:15px;
+  box-shadow:0 5px 15px rgba(0,0,0,0.2);
+}
+
+h1{
+  text-align:center;
+  color:#1faa59;
+}
+
+.top{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:20px;
+}
+
+select,button{
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
+}
+
+button{
+  background:#1faa59;
+  color:white;
+  border:none;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#168847;
+}
+
+.kelas-box{
+  margin-top:30px;
+}
+
+.kelas-title{
+  background:#1faa59;
+  color:white;
+  padding:10px;
+  border-radius:8px;
+  font-size:20px;
+  margin-bottom:10px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-bottom:20px;
+}
+
+th{
+  background:#1faa59;
+  color:white;
+}
+
+th,td{
+  border:1px solid #ddd;
+  padding:8px;
+  text-align:left;
+}
+
+.danger{
+  background:#ffd6d6;
+  color:red;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Rekap Bulanan Pelanggaran PKS</h1>
+
+<div class="top">
+
+<select id="bulan">
+<option value="0">Januari</option>
+<option value="1">Februari</option>
+<option value="2">Maret</option>
+<option value="3">April</option>
+<option value="4">Mei</option>
+<option value="5">Juni</option>
+<option value="6">Juli</option>
+<option value="7">Agustus</option>
+<option value="8">September</option>
+<option value="9">Oktober</option>
+<option value="10">November</option>
+<option value="11">Desember</option>
+</select>
+
+<select id="tahun"></select>
+
+<button onclick="loadRekap()">Tampilkan Rekap</button>
+
+</div>
+
+<div id="hasil"></div>
+
+</div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbxIDolVcldDWRDbxmgqBjiEyNP2Fh_0ZCnaxZ_a_UWz17aVMhcOK46Nkz2xX3Tf79pS/exec";
+
+let semuaData = [];
+
+// AUTO ISI TAHUN
+let tahunNow = new Date().getFullYear();
+
+for(let i = tahunNow - 2; i <= tahunNow + 1; i++){
+
+  document.getElementById("tahun").innerHTML +=
+    `<option value="${i}">${i}</option>`;
+
+}
+
+document.getElementById("bulan").value =
+  new Date().getMonth();
+
+document.getElementById("tahun").value =
+  tahunNow;
+
+// LOAD DATA
+async function loadRekap(){
+
+  try{
+
+    let res = await fetch(API + "?t=" + Date.now());
+
+    semuaData = await res.json();
+
+    prosesRekap();
+
+  }catch(err){
+
+    alert("Gagal load data");
+
+  }
+
+}
+
+// PROSES REKAP
+function prosesRekap(){
+
+  let bulan = parseInt(
+    document.getElementById("bulan").value
+  );
+
+  let tahun = parseInt(
+    document.getElementById("tahun").value
+  );
+
+  let hasil = {};
+
+  semuaData.forEach(d => {
+
+    if(!d[3]) return;
+
+    let tanggal = new Date(d[3]);
+
+    if(
+      tanggal.getMonth() !== bulan ||
+      tanggal.getFullYear() !== tahun
+    ) return;
+
+    let nama = d[0]?.trim();
+    let kelas = d[1]?.toUpperCase().trim();
+    let pelanggaran = d[2]?.trim();
+    let tgl = tanggal.toLocaleDateString("id-ID");
+
+    if(!hasil[kelas]){
+      hasil[kelas] = {};
+    }
+
+    let key = nama + "_" + kelas;
+
+    if(!hasil[kelas][key]){
+
+      hasil[kelas][key] = {
+        nama,
+        kelas,
+        pelanggaran:[],
+        tanggal:[],
+        total:0
+      };
+
+    }
+
+    hasil[kelas][key].pelanggaran.push(pelanggaran);
+    hasil[kelas][key].tanggal.push(tgl);
+    hasil[kelas][key].total++;
+
+  });
+
+  tampilkanRekap(hasil);
+
+}
+
+// TAMPILKAN
+function tampilkanRekap(data){
+
+  let hasil = document.getElementById("hasil");
+
+  hasil.innerHTML = "";
+
+  let semuaKelas = [
+    "7A","7B","7C","7D","7E","7F","7G","7H","7I","7J","7K",
+    "8A","8B","8C","8D","8E","8F","8G","8H","8I","8J","8K",
+    "9A","9B","9C","9D","9E","9F","9G","9H","9I","9J","9K","9L","9M","9N","9O","9P"
+  ];
+
+  semuaKelas.forEach(kelas => {
+
+    let siswa = data[kelas];
+
+    if(!siswa) return;
+
+    let arr = Object.values(siswa)
+      .sort((a,b) => b.total - a.total);
+
+    let html = `
+      <div class="kelas-box">
+
+      <div class="kelas-title">
+        KELAS ${kelas}
+      </div>
+
+      <table>
+
+      <thead>
+      <tr>
+      <th>No</th>
+      <th>Nama</th>
+      <th>Pelanggaran</th>
+      <th>Tanggal</th>
+      <th>Total</th>
+      </tr>
+      </thead>
+
+      <tbody>
+    `;
+
+    arr.forEach((d,i) => {
+
+      let merah = d.total >= 5 ? "danger" : "";
+
+      html += `
+        <tr class="${merah}">
+          <td>${i+1}</td>
+          <td>${capitalize(d.nama)}</td>
+          <td>${d.pelanggaran.join(", ")}</td>
+          <td>${d.tanggal.join(", ")}</td>
+          <td>${d.total}</td>
+        </tr>
+      `;
+
+    });
+
+    html += `
+      </tbody>
+      </table>
+      </div>
+    `;
+
+    hasil.innerHTML += html;
+
+  });
+
+}
+
+// FORMAT NAMA
+function capitalize(text){
+
+  return text.replace(/\b\w/g,
+    c => c.toUpperCase()
+  );
+
+}
+
+// LOAD AWAL
+loadRekap();
+</script>
+
+</body>
+</html>
