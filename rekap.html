@@ -135,6 +135,7 @@ for(let i = tahunNow - 2; i <= tahunNow + 1; i++){
 
 }
 
+// AUTO PILIH BULAN & TAHUN SEKARANG
 document.getElementById("bulan").value =
   new Date().getMonth();
 
@@ -146,13 +147,22 @@ async function loadRekap(){
 
   try{
 
+    // 🔥 ANTI CACHE BIAR DATA SELALU UPDATE
     let res = await fetch(API + "?t=" + Date.now());
 
     semuaData = await res.json();
 
+    // 🔥 BUANG HEADER KALAU ADA
+    semuaData = semuaData.filter(d =>
+      d[0] &&
+      d[0] !== "Nama"
+    );
+
     prosesRekap();
 
   }catch(err){
+
+    console.log(err);
 
     alert("Gagal load data");
 
@@ -179,15 +189,18 @@ function prosesRekap(){
 
     let tanggal = new Date(d[3]);
 
+    // 🔥 FILTER BULAN & TAHUN
     if(
       tanggal.getMonth() !== bulan ||
       tanggal.getFullYear() !== tahun
     ) return;
 
-    let nama = d[0]?.trim();
-    let kelas = d[1]?.toUpperCase().trim();
-    let pelanggaran = d[2]?.trim();
+    let nama = (d[0] || "").trim();
+    let kelas = (d[1] || "").toUpperCase().trim();
+    let pelanggaran = (d[2] || "").trim();
     let tgl = tanggal.toLocaleDateString("id-ID");
+
+    if(!nama || !kelas) return;
 
     if(!hasil[kelas]){
       hasil[kelas] = {};
@@ -217,7 +230,7 @@ function prosesRekap(){
 
 }
 
-// TAMPILKAN
+// TAMPILKAN REKAP
 function tampilkanRekap(data){
 
   let hasil = document.getElementById("hasil");
@@ -269,8 +282,8 @@ function tampilkanRekap(data){
         <tr class="${merah}">
           <td>${i+1}</td>
           <td>${capitalize(d.nama)}</td>
-          <td>${d.pelanggaran.join(", ")}</td>
-          <td>${d.tanggal.join(", ")}</td>
+          <td>${d.pelanggaran.join("<br>")}</td>
+          <td>${d.tanggal.join("<br>")}</td>
           <td>${d.total}</td>
         </tr>
       `;
@@ -301,6 +314,3 @@ function capitalize(text){
 // LOAD AWAL
 loadRekap();
 </script>
-
-</body>
-</html>
