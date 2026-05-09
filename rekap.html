@@ -96,6 +96,9 @@ th,td{
 <div class="top">
 
 <select id="bulan">
+
+<option value="semua">Semua Bulan</option>
+
 <option value="0">Januari</option>
 <option value="1">Februari</option>
 <option value="2">Maret</option>
@@ -108,6 +111,7 @@ th,td{
 <option value="9">Oktober</option>
 <option value="10">November</option>
 <option value="11">Desember</option>
+
 </select>
 
 <select id="tahun"></select>
@@ -135,9 +139,8 @@ for(let i = tahunNow - 2; i <= tahunNow + 1; i++){
 
 }
 
-// AUTO PILIH BULAN & TAHUN SEKARANG
-document.getElementById("bulan").value =
-  new Date().getMonth();
+// 🔥 DEFAULT LANGSUNG SEMUA BULAN
+document.getElementById("bulan").value = "semua";
 
 document.getElementById("tahun").value =
   tahunNow;
@@ -147,12 +150,11 @@ async function loadRekap(){
 
   try{
 
-    // 🔥 ANTI CACHE BIAR DATA SELALU UPDATE
     let res = await fetch(API + "?t=" + Date.now());
 
     semuaData = await res.json();
 
-    // 🔥 BUANG HEADER KALAU ADA
+    // 🔥 HAPUS HEADER
     semuaData = semuaData.filter(d =>
       d[0] &&
       d[0] !== "Nama"
@@ -173,9 +175,8 @@ async function loadRekap(){
 // PROSES REKAP
 function prosesRekap(){
 
-  let bulan = parseInt(
-    document.getElementById("bulan").value
-  );
+  let bulan =
+    document.getElementById("bulan").value;
 
   let tahun = parseInt(
     document.getElementById("tahun").value
@@ -189,16 +190,23 @@ function prosesRekap(){
 
     let tanggal = new Date(d[3]);
 
-    // 🔥 FILTER BULAN & TAHUN
+    // 🔥 FILTER TAHUN
     if(
-      tanggal.getMonth() !== bulan ||
       tanggal.getFullYear() !== tahun
+    ) return;
+
+    // 🔥 FILTER BULAN
+    if(
+      bulan !== "semua" &&
+      tanggal.getMonth() !== parseInt(bulan)
     ) return;
 
     let nama = (d[0] || "").trim();
     let kelas = (d[1] || "").toUpperCase().trim();
     let pelanggaran = (d[2] || "").trim();
-    let tgl = tanggal.toLocaleDateString("id-ID");
+
+    let tgl =
+      tanggal.toLocaleDateString("id-ID");
 
     if(!nama || !kelas) return;
 
@@ -230,7 +238,7 @@ function prosesRekap(){
 
 }
 
-// TAMPILKAN REKAP
+// TAMPILKAN
 function tampilkanRekap(data){
 
   let hasil = document.getElementById("hasil");
@@ -314,3 +322,6 @@ function capitalize(text){
 // LOAD AWAL
 loadRekap();
 </script>
+
+</body>
+</html>
