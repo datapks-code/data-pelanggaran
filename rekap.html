@@ -32,10 +32,14 @@ h1{
   margin-bottom:20px;
 }
 
-select,button{
+select,input,button{
   padding:10px;
   border-radius:8px;
   border:1px solid #ccc;
+}
+
+input{
+  min-width:220px;
 }
 
 button{
@@ -77,12 +81,28 @@ th,td{
   border:1px solid #ddd;
   padding:8px;
   text-align:left;
+  vertical-align: top;
 }
 
 .danger{
   background:#ffd6d6;
   color:red;
   font-weight:bold;
+}
+
+.kosong{
+  text-align:center;
+  margin-top:30px;
+  color:#666;
+  font-size:18px;
+}
+
+.info{
+  background:#eef8ee;
+  border-left:5px solid #1faa59;
+  padding:10px;
+  border-radius:8px;
+  margin-bottom:20px;
 }
 </style>
 </head>
@@ -93,9 +113,18 @@ th,td{
 
 <h1>Rekap Bulanan Pelanggaran PKS</h1>
 
+<div class="info">
+  🔥 Default menampilkan semua bulan dalam 1 tahun.<br>
+  🔍 Search bisa: nama, kelas, atau gabungan. Contoh:
+  <b>bintang</b>,
+  <b>9H</b>,
+  <b>bintang 9h</b>,
+  <b>9h bintang</b>
+</div>
+
 <div class="top">
 
-<select id="bulan">
+<select id="bulan" onchange="prosesRekap()">
 
 <option value="semua">Semua Bulan</option>
 
@@ -114,9 +143,22 @@ th,td{
 
 </select>
 
-<select id="tahun"></select>
+<select id="tahun" onchange="prosesRekap()"></select>
 
-<button onclick="loadRekap()">Tampilkan Rekap</button>
+<input
+  type="text"
+  id="search"
+  placeholder="🔍 Cari nama / kelas / gabungan..."
+  onkeyup="prosesRekap()"
+>
+
+<input
+  type="date"
+  id="tanggal"
+  onchange="prosesRekap()"
+>
+
+<button onclick="loadRekap()">Refresh Rekap</button>
 
 </div>
 
@@ -139,11 +181,9 @@ for(let i = tahunNow - 2; i <= tahunNow + 1; i++){
 
 }
 
-// 🔥 DEFAULT LANGSUNG SEMUA BULAN
+// DEFAULT
 document.getElementById("bulan").value = "semua";
-
-document.getElementById("tahun").value =
-  tahunNow;
+document.getElementById("tahun").value = tahunNow;
 
 // LOAD DATA
 async function loadRekap(){
@@ -154,7 +194,7 @@ async function loadRekap(){
 
     semuaData = await res.json();
 
-    // 🔥 HAPUS HEADER
+    // HAPUS HEADER
     semuaData = semuaData.filter(d =>
       d[0] &&
       d[0] !== "Nama"
@@ -182,6 +222,17 @@ function prosesRekap(){
     document.getElementById("tahun").value
   );
 
+  let keyword =
+    document.getElementById("search")
+    .value
+    .toLowerCase()
+    .trim();
+
+  let filterTanggal =
+    document.getElementById("tanggal").value;
+
+  let kata = keyword.split(" ");
+
   let hasil = {};
 
   semuaData.forEach(d => {
@@ -190,23 +241,53 @@ function prosesRekap(){
 
     let tanggal = new Date(d[3]);
 
-    // 🔥 FILTER TAHUN
+    // FILTER TAHUN
     if(
       tanggal.getFullYear() !== tahun
     ) return;
 
-    // 🔥 FILTER BULAN
+    // FILTER BULAN
     if(
       bulan !== "semua" &&
       tanggal.getMonth() !== parseInt(bulan)
     ) return;
 
+    // FILTER TANGGAL
+    if(filterTanggal){
+
+      let tglData =
+        tanggal.toISOString().split("T")[0];
+
+      if(tglData !== filterTanggal)
+        return;
+
+    }
+
     let nama = (d[0] || "").trim();
     let kelas = (d[1] || "").toUpperCase().trim();
     let pelanggaran = (d[2] || "").trim();
 
+    let gabungan =
+      (nama + " " + kelas).toLowerCase();
+
+    // SEARCH FLEX
+    if(keyword !== ""){
+
+      let cocok = kata.every(k =>
+        gabungan.includes(k)
+      );
+
+      if(!cocok) return;
+
+    }
+
     let tgl =
       tanggal.toLocaleDateString("id-ID");
+
+    let hari =
+      tanggal.toLocaleDateString("id-ID", {
+        weekday: 'long'
+      });
 
     if(!nama || !kelas) return;
 
@@ -223,6 +304,7 @@ function prosesRekap(){
         kelas,
         pelanggaran:[],
         tanggal:[],
+        hari:[],
         total:0
       };
 
@@ -230,6 +312,7 @@ function prosesRekap(){
 
     hasil[kelas][key].pelanggaran.push(pelanggaran);
     hasil[kelas][key].tanggal.push(tgl);
+    hasil[kelas][key].hari.push(hari);
     hasil[kelas][key].total++;
 
   });
@@ -251,11 +334,15 @@ function tampilkanRekap(data){
     "9A","9B","9C","9D","9E","9F","9G","9H","9I","9J","9K","9L","9M","9N","9O","9P"
   ];
 
+  let adaData = false;
+
   semuaKelas.forEach(kelas => {
 
     let siswa = data[kelas];
 
     if(!siswa) return;
+
+    adaData = true;
 
     let arr = Object.values(siswa)
       .sort((a,b) => b.total - a.total);
@@ -274,7 +361,7 @@ function tampilkanRekap(data){
       <th>No</th>
       <th>Nama</th>
       <th>Pelanggaran</th>
-      <th>Tanggal</th>
+      <th>Hari / Tanggal</th>
       <th>Total</th>
       </tr>
       </thead>
@@ -286,12 +373,16 @@ function tampilkanRekap(data){
 
       let merah = d.total >= 5 ? "danger" : "";
 
+      let hariTanggal = d.hari.map((h,index) => {
+        return h + ", " + d.tanggal[index];
+      });
+
       html += `
         <tr class="${merah}">
           <td>${i+1}</td>
           <td>${capitalize(d.nama)}</td>
           <td>${d.pelanggaran.join("<br>")}</td>
-          <td>${d.tanggal.join("<br>")}</td>
+          <td>${hariTanggal.join("<br>")}</td>
           <td>${d.total}</td>
         </tr>
       `;
@@ -307,6 +398,16 @@ function tampilkanRekap(data){
     hasil.innerHTML += html;
 
   });
+
+  if(!adaData){
+
+    hasil.innerHTML = `
+      <div class="kosong">
+        Data tidak ditemukan
+      </div>
+    `;
+
+  }
 
 }
 
